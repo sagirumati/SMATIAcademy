@@ -1,0 +1,495 @@
+Sub IMF_Annual_Series()
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim lastRow As Long, lastCol As Long
+    Dim DataRange As Range, NewSheet As Worksheet
+    
+    Set wb = ActiveWorkbook ' Ensure we modify the active workbook
+    
+    ' Check if "ANNUAL SERIES" exists and delete it
+    On Error Resume Next
+    Set ws = wb.Sheets("ANNUAL SERIES")
+    If Not ws Is Nothing Then
+        Application.DisplayAlerts = False
+        ws.Delete
+        Application.DisplayAlerts = True
+    End If
+    On Error GoTo 0
+    
+    ' Find the last row and column in the active sheet
+    With ActiveSheet
+        lastRow = .Cells(.Rows.Count, "B").End(xlUp).Row
+        lastCol = .Cells(8, .Columns.Count).End(xlToLeft).Column
+        Set DataRange = .Range("B8", .Cells(lastRow, lastCol))
+    End With
+    
+    ' Copy and transpose data into a new sheet
+    DataRange.Copy
+    Set NewSheet = wb.Sheets.Add(After:=ActiveSheet)
+    NewSheet.Range("A1").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+    NewSheet.Rows("1:3").Delete Shift:=xlUp
+    
+    Application.CutCopyMode = False
+    
+    ' Apply filtering
+    With NewSheet
+        If .AutoFilterMode Then .AutoFilterMode = False
+        lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+        .Range("$A$1:$G$" & lastRow).AutoFilter Field:=1, Criteria1:="=*m*", Operator:=xlOr, Criteria2:="=*q*"
+        .Range("A2").CurrentRegion.Offset(1).EntireRow.Delete
+        .AutoFilterMode = False
+        .Name = "ANNUAL SERIES"
+    End With
+End Sub
+
+Sub IMF_Quarterly_Series()
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim lastRow As Long, lastCol As Long
+    Dim DataRange As Range, NewSheet As Worksheet
+    
+    Set wb = ActiveWorkbook
+    
+    ' Check if "QUARTERLY SERIES" exists and delete it
+    On Error Resume Next
+    Set ws = wb.Sheets("QUARTERLY SERIES")
+    If Not ws Is Nothing Then
+        Application.DisplayAlerts = False
+        ws.Delete
+        Application.DisplayAlerts = True
+    End If
+    On Error GoTo 0
+    
+    ' Process data
+    With ActiveSheet
+        lastRow = .Cells(.Rows.Count, "B").End(xlUp).Row
+        lastCol = .Cells(8, .Columns.Count).End(xlToLeft).Column
+        Set DataRange = .Range("B8", .Cells(lastRow, lastCol))
+    End With
+    
+    DataRange.Copy
+    Set NewSheet = wb.Sheets.Add(After:=ActiveSheet)
+    NewSheet.Range("A1").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+    NewSheet.Rows("1:3").Delete Shift:=xlUp
+    
+    Application.CutCopyMode = False
+    
+    ' Apply filtering
+    With NewSheet
+        If .AutoFilterMode Then .AutoFilterMode = False
+        lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+        .Range("$A$1:$G$" & lastRow).AutoFilter Field:=1, Criteria1:="<>*q*"
+        .Range("A2").CurrentRegion.Offset(1).EntireRow.Delete
+        .AutoFilterMode = False
+        .Name = "QUARTERLY SERIES"
+    End With
+End Sub
+
+Sub IMF_Monthly_Series()
+    Dim wb As Workbook
+    Dim ws As Worksheet
+    Dim lastRow As Long, lastCol As Long
+    Dim DataRange As Range, NewSheet As Worksheet
+    
+    Set wb = ActiveWorkbook
+    
+    ' Check if "MONTHLY SERIES" exists and delete it
+    On Error Resume Next
+    Set ws = wb.Sheets("MONTHLY SERIES")
+    If Not ws Is Nothing Then
+        Application.DisplayAlerts = False
+        ws.Delete
+        Application.DisplayAlerts = True
+    End If
+    On Error GoTo 0
+    
+    ' Process data
+    With ActiveSheet
+        lastRow = .Cells(.Rows.Count, "B").End(xlUp).Row
+        lastCol = .Cells(8, .Columns.Count).End(xlToLeft).Column
+        Set DataRange = .Range("B8", .Cells(lastRow, lastCol))
+    End With
+    
+    DataRange.Copy
+    Set NewSheet = wb.Sheets.Add(After:=ActiveSheet)
+    NewSheet.Range("A1").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+    NewSheet.Rows("1:3").Delete Shift:=xlUp
+    
+    Application.CutCopyMode = False
+    
+    ' Apply filtering
+    With NewSheet
+        If .AutoFilterMode Then .AutoFilterMode = False
+        lastRow = .Cells(.Rows.Count, "A").End(xlUp).Row
+        .Range("$A$1:$G$" & lastRow).AutoFilter Field:=1, Criteria1:="<>*M*"
+        .Range("A2").CurrentRegion.Offset(1).EntireRow.Delete
+        .AutoFilterMode = False
+        .Name = "MONTHLY SERIES"
+    End With
+End Sub
+
+
+
+Sub WB_cross_section()
+    Dim ws As Worksheet, wsDest As Worksheet
+    Dim lastRow As Long, lastCol As Long, lastDestRow As Long
+    Dim colToSort As Integer, colToCopy As Long
+    Dim userInput As String
+    Dim i As Long, pasteRow As Long, pasteCol As Long
+    Dim uniqueValues As Collection
+    Dim cell As Range, val As Variant
+    Dim sortedRange As Range
+    Dim headerSearch As String
+    
+    ' Set source as the active sheet
+    Set ws = ActiveSheet
+    
+    ' Prompt the user to enter the first 4 characters of the header to search for
+    headerSearch = Application.InputBox("Enter the first 4 characters of the column header to search for:", "Header Search", Type:=2)
+    
+    ' Validate user input
+    If headerSearch = "" Then
+        MsgBox "No input provided. Operation cancelled.", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Check if "CROSS SECTION DATA" sheet exists, if not, create it
+    On Error Resume Next
+    Set wsDest = ActiveWorkbook.Sheets("CROSS SECTION DATA")
+    If wsDest Is Nothing Then
+        Set wsDest = ActiveWorkbook.Sheets.Add
+        wsDest.Name = "CROSS SECTION DATA"
+    End If
+    On Error GoTo 0
+    
+    ' Find last row and last column dynamically in the active sheet
+    lastRow = ws.Cells(ws.Rows.Count, 3).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    
+    ' Set the column to sort (Column 3)
+    colToSort = 3
+    
+    ' Sort data based on column 3
+    ws.Range(ws.Cells(1, 1), ws.Cells(lastRow, lastCol)).Sort _
+        Key1:=ws.Cells(2, colToSort), Order1:=xlAscending, Header:=xlYes
+    
+    ' Find the column based on the first 4 characters of the header
+    colToCopy = 0 ' Initialize the column number variable
+    
+    For i = 1 To lastCol
+        If Left(ws.Cells(1, i).Value, 4) = headerSearch Then
+            colToCopy = i
+            Exit For
+        End If
+    Next i
+    
+    ' If column not found, show error message
+    If colToCopy = 0 Then
+        MsgBox "Column starting with '" & headerSearch & "' not found!", vbExclamation
+        Exit Sub
+    End If
+    
+    ' Collect unique values from column 3 (sorting ensures uniqueness)
+    Set uniqueValues = New Collection
+    On Error Resume Next ' Ignore errors for duplicates
+    For i = 2 To lastRow
+        uniqueValues.Add ws.Cells(i, colToSort).Value, CStr(ws.Cells(i, colToSort).Value)
+    Next i
+    On Error GoTo 0 ' Turn back on error handling
+    
+    ' Initialize paste column
+    pasteCol = 1
+    
+    ' Loop through each unique value and copy the data for each unique value in column 3
+    For Each val In uniqueValues
+        ' Always start pasting from row 2 and overwrite any existing data in "CROSS SECTION DATA"
+        pasteRow = 2 ' Always start from row 2
+        
+        ' Loop through the rows and paste the data for the current unique value
+        For i = 2 To lastRow
+            If ws.Cells(i, colToSort).Value = val Then
+                wsDest.Cells(pasteRow, pasteCol).Value = ws.Cells(i, colToCopy).Value
+                pasteRow = pasteRow + 1
+            End If
+        Next i
+        
+        ' Move to the next column for the next unique value
+        pasteCol = pasteCol + 1
+    Next val
+    
+    MsgBox "Sorting, copying, and pasting completed!", vbInformation
+End Sub
+
+
+
+Sub WB_panel()
+    Dim wsData As Worksheet
+    Dim wsMerge As Worksheet
+    Dim uniqueCountries As Collection
+    Dim country As Variant
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim rngFilter As Range
+    Dim mergeRow As Long
+    Dim i As Long
+    Dim countryLastRow As Long
+    Dim isFirstCountry As Boolean
+    Dim cell As Range
+    Dim ws As Worksheet
+    Dim wsToDelete As Worksheet
+    Dim sheetExists As Boolean
+
+    ' Speed up execution
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+
+    ' Set the worksheet containing the data
+    Set wsData = Worksheets("Data")
+
+    ' Remove values in square brackets in column A
+    lastRow = wsData.Cells(wsData.Rows.Count, 1).End(xlUp).Row
+    For Each cell In wsData.Range("A1:A" & lastRow)
+        cell.Value = RemoveBrackets(cell.Value)
+    Next cell
+
+    ' Find the last column of the data
+    lastCol = wsData.Cells(1, wsData.Columns.Count).End(xlToLeft).Column
+
+    ' Define the range to filter
+    Set rngFilter = wsData.Range(wsData.Cells(1, 1), wsData.Cells(lastRow, lastCol))
+
+    ' Collect unique country names from the first column
+    Set uniqueCountries = New Collection
+    On Error Resume Next ' Ignore errors for duplicates
+    For Each country In wsData.Range("A2:A" & lastRow).Value
+        If Trim(country) <> "" Then ' Skip blank rows
+            uniqueCountries.Add country, CStr(country)
+        End If
+    Next country
+    On Error GoTo 0 ' Resume normal error handling
+
+    ' Remove the last two countries (Ensure count is sufficient)
+    If uniqueCountries.Count > 2 Then
+        For i = 1 To 2
+            On Error Resume Next
+            uniqueCountries.Remove uniqueCountries.Count
+            On Error GoTo 0
+        Next i
+    End If
+
+    ' Delete existing country sheets
+    For Each ws In Worksheets
+        For Each country In uniqueCountries
+            If ws.Name = country & " DATA" Then
+                Application.DisplayAlerts = False
+                ws.Delete
+                Application.DisplayAlerts = True
+                Exit For
+            End If
+        Next country
+    Next ws
+
+    ' Create or clear the "PANEL DATA" sheet
+    sheetExists = False
+    For Each ws In Worksheets
+        If ws.Name = "PANEL DATA" Then
+            sheetExists = True
+            Set wsMerge = ws
+            wsMerge.Cells.Clear
+            Exit For
+        End If
+    Next ws
+    If Not sheetExists Then
+        Set wsMerge = Worksheets.Add
+        wsMerge.Name = "PANEL DATA"
+    End If
+
+    ' Initialize merge row and first country flag
+    mergeRow = 1
+    isFirstCountry = True
+
+    ' Loop through unique countries and process each
+    For Each country In uniqueCountries
+        ' Apply filter for the current country
+        rngFilter.AutoFilter Field:=1, Criteria1:=country
+
+        ' Copy the filtered data
+        On Error Resume Next
+        rngFilter.SpecialCells(xlCellTypeVisible).Copy
+        On Error GoTo 0
+
+        ' Create a new sheet for the country
+        Set wsNew = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        wsNew.Name = country & " DATA"
+
+        ' Paste the copied data into the new sheet
+        wsNew.Range("A1").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+
+        ' Clear clipboard
+        Application.CutCopyMode = False
+
+        ' Delete the first 3 rows in the new sheet (Only if it makes sense)
+        If wsNew.Cells(3, 1).Value <> "" Then
+            wsNew.Rows("1:3").Delete Shift:=xlUp
+        End If
+
+        ' Insert the country name as the second column
+        countryLastRow = wsNew.Cells(wsNew.Rows.Count, 1).End(xlUp).Row
+        wsNew.Columns("B").Insert Shift:=xlToRight
+        wsNew.Range("B1:B" & countryLastRow).Value = country
+
+        ' Remove values in square brackets in column A of the new sheet
+        For Each cell In wsNew.Range("A1:A" & countryLastRow)
+            cell.Value = RemoveBrackets(cell.Value)
+        Next cell
+
+        ' Copy the processed data into the merged sheet
+        If isFirstCountry Then
+            ' Copy headers for the first country
+            wsNew.Rows("1:" & countryLastRow).EntireRow.Copy
+        Else
+            ' Skip the header row for subsequent countries
+            wsNew.Rows("2:" & countryLastRow).EntireRow.Copy
+        End If
+
+        wsMerge.Cells(mergeRow, 1).PasteSpecial Paste:=xlPasteAll
+        mergeRow = wsMerge.Cells(wsMerge.Rows.Count, 1).End(xlUp).Row + 1
+
+        ' Mark as not the first country
+        isFirstCountry = False
+    Next country
+
+    ' Remove values in square brackets in column A of the merged sheet
+    lastRow = wsMerge.Cells(wsMerge.Rows.Count, 1).End(xlUp).Row
+    For Each cell In wsMerge.Range("A1:A" & lastRow)
+        cell.Value = RemoveBrackets(cell.Value)
+    Next cell
+
+    ' Remove filters
+    wsData.AutoFilterMode = False
+
+    ' Restore default settings
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+
+    MsgBox "Data processing and merging completed successfully!", vbInformation
+End Sub
+
+Function RemoveBrackets(ByVal txt As String) As String
+    ' Remove values in square brackets from a given text
+    Dim regex As Object
+    Set regex = CreateObject("VBScript.RegExp")
+    regex.Pattern = "\[.*?\]" ' Matches anything inside square brackets
+    regex.Global = True
+    RemoveBrackets = regex.Replace(txt, "")
+End Function
+
+
+Sub WB_time_series()
+    Dim wsData As Worksheet
+    Dim uniqueCountries As Collection
+    Dim country As Variant
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim rngFilter As Range
+    Dim i As Long
+    Dim cell As Range
+    Dim ws As Worksheet
+    Dim wsNew As Worksheet
+
+    ' Speed up execution
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+
+    ' Set the worksheet containing the data
+    Set wsData = Worksheets("Data")
+
+    ' Remove values in square brackets in column A
+    lastRow = wsData.Cells(wsData.Rows.Count, 1).End(xlUp).Row
+    For Each cell In wsData.Range("A1:A" & lastRow)
+        cell.Value = RemoveBrackets(cell.Value)
+    Next cell
+
+    ' Find the last column of the data
+    lastCol = wsData.Cells(1, wsData.Columns.Count).End(xlToLeft).Column
+
+    ' Define the range to filter
+    Set rngFilter = wsData.Range(wsData.Cells(1, 1), wsData.Cells(lastRow, lastCol))
+
+    ' Collect unique country names from the first column
+    Set uniqueCountries = New Collection
+    On Error Resume Next ' Ignore errors for duplicates
+    For Each country In wsData.Range("A2:A" & lastRow).Value
+        If Trim(country) <> "" Then ' Skip blank rows
+            uniqueCountries.Add country, CStr(country)
+        End If
+    Next country
+    On Error GoTo 0 ' Resume normal error handling
+
+    ' Remove the last two countries (Ensure count is sufficient)
+    If uniqueCountries.Count > 2 Then
+        For i = 1 To 2
+            On Error Resume Next
+            uniqueCountries.Remove uniqueCountries.Count
+            On Error GoTo 0
+        Next i
+    End If
+
+    ' Delete existing country sheets
+    Application.DisplayAlerts = False
+    For Each ws In Worksheets
+        For Each country In uniqueCountries
+            If ws.Name = country & " DATA" Then
+                ws.Delete
+                Exit For
+            End If
+        Next country
+    Next ws
+    Application.DisplayAlerts = True
+
+    ' Loop through unique countries and create sheets
+    For Each country In uniqueCountries
+        ' Apply filter for the current country
+        rngFilter.AutoFilter Field:=1, Criteria1:=country
+
+        ' Copy the filtered data
+        On Error Resume Next
+        rngFilter.SpecialCells(xlCellTypeVisible).Copy
+        On Error GoTo 0
+
+        ' Create a new sheet for the country
+        Set wsNew = Worksheets.Add(After:=Worksheets(Worksheets.Count))
+        wsNew.Name = country & " DATA"
+
+        ' Paste the copied data into the new sheet
+        wsNew.Range("A1").PasteSpecial Paste:=xlPasteAll, Transpose:=True
+
+        ' Clear clipboard
+        Application.CutCopyMode = False
+
+        ' Delete the first 3 rows in the new sheet (Only if it makes sense)
+        If wsNew.Cells(3, 1).Value <> "" Then
+            wsNew.Rows("1:3").Delete Shift:=xlUp
+        End If
+
+        ' Remove values in square brackets in column A of the new sheet
+        lastRow = wsNew.Cells(wsNew.Rows.Count, 1).End(xlUp).Row
+        For Each cell In wsNew.Range("A1:A" & lastRow)
+            cell.Value = RemoveBrackets(cell.Value)
+        Next cell
+    Next country
+
+    ' Remove filters
+    wsData.AutoFilterMode = False
+
+    ' Restore default settings
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+
+    MsgBox "Data processing completed successfully!", vbInformation
+End Sub
+
+
+
+
+
