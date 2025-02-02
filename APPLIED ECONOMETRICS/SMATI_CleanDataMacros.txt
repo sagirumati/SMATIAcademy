@@ -145,7 +145,7 @@ Sub WB_cross_section()
     Set ws = ActiveSheet
     
     ' Prompt the user to enter the first 4 characters of the header to search for
-    headerSearch = Application.InputBox("Enter the first 4 characters of the column header to search for:", "Header Search", Type:=2)
+    headerSearch = Application.InputBox("Enter the first 4 characters of the year:", "Header Search", Type:=2)
     
     ' Validate user input
     If headerSearch = "" Then
@@ -217,7 +217,7 @@ Sub WB_cross_section()
         pasteCol = pasteCol + 1
     Next val
     
-    MsgBox "Sorting, copying, and pasting completed!", vbInformation
+    MsgBox "Processing cross section data completed successfully!", vbInformation
 End Sub
 
 
@@ -372,7 +372,7 @@ Sub WB_panel()
     Application.ScreenUpdating = True
     Application.Calculation = xlCalculationAutomatic
 
-    MsgBox "Data processing and merging completed successfully!", vbInformation
+    MsgBox "Processing panel data completed successfully!", vbInformation
 End Sub
 
 Function RemoveBrackets(ByVal txt As String) As String
@@ -486,7 +486,7 @@ Sub WB_time_series()
     Application.ScreenUpdating = True
     Application.Calculation = xlCalculationAutomatic
 
-    MsgBox "Data processing completed successfully!", vbInformation
+    MsgBox "Processing time series data completed successfully!", vbInformation
 End Sub
 
 
